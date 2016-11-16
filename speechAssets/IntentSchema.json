@@ -1,0 +1,24 @@
+{
+  "intents":
+  [
+    {
+      "intent":"handleOneshotStockIntent",
+      "slots":
+      [
+        {
+          "name":"CompanyName",
+          "type": "LIST_OF_COMPANIES"
+        }
+      ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent":"AMAZON.StopIntent"
+    },
+    {
+      "intent":"AMAZON.CancelIntent"
+    }
+  ]
+}

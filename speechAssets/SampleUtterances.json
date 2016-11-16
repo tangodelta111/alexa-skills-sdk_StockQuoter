@@ -1,0 +1,7 @@
+handleOneshotStockIntent what is the stock price of {CompanyName}
+handleOneshotStockIntent stock price of {CompanyName}
+handleOneshotStockIntent give me price of {CompanyName}
+handleOneshotStockIntent price of {CompanyName}
+handleOneshotStockIntent tell me about {CompanyName}
+handleOneshotStockIntent get the price of {CompanyName}
+handleOneshotStockIntent what's the stock price of {CompanyName}

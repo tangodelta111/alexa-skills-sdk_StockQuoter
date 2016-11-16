@@ -1,2 +1,1 @@
-# alexa-skills-sdk_StockQuoter
-Stock Quote Skill using Alexa Skills SDK
+# alexia-skills-sdk_StockQuoter
