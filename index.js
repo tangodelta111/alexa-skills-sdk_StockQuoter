@@ -2,7 +2,7 @@
 var Alexa = require('alexa-sdk');
 var http = require('http');
 
-var APP_ID = 'null';//replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
+var APP_ID = 'null';//replace with skill ID from your Alexa Skills Developer Dashboard. it is similar to: 'alexa-skill-ask.app.[your-unique-value-here]';
 var SKILL_NAME = 'Stock Quoter';
 
 
