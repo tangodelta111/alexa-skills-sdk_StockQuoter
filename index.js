@@ -5,9 +5,6 @@ var http = require('http');
 var APP_ID = 'null';//replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 var SKILL_NAME = 'Stock Quoter';
 
-/**
- * Array containing space facts.
- */
 
 exports.handler = function(event, context, callback) {
     var alexa = Alexa.handler(event, context);
@@ -27,7 +24,6 @@ var handlers = {
         this.emit(':ask', speechOutput, reprompt);
     },
     'handleOneshotStockIntent': function () {
-
         intentProcess(this.event.request.intent, this.emit);
     },
     'AMAZON.HelpIntent': function () {
@@ -50,21 +46,35 @@ var handlers = {
 function buildSpeechFromParsed(lookupData, emit){
     var speechOutput;
     if(lookupData.error){
+        // do something
         speechOutput = "Sorry, I'm having trouble connecting with the data service. Please try again later.";
+        emit(':tell', speechOutput);
     }
     else{
         if(lookupData.upDown){
-            speechOutput = lookupData.name + lookupData.currentStatus + lookupData.upDown 
-                + lookupData.changePer + " precent to " + lookupData.lastPrice + ". "; 
+            if(lookupData.currentStatus == " is "){
+                // speechOutput = lookupData.name + lookupData.currentStatus + lookupData.upDown 
+                //     + lookupData.changePer + " percent to $" + lookupData.lastPrice + ". "; 
+                speechOutput = lookupData.name + lookupData.currentStatus + " currently trading at $" + lookupData.lastPrice + ". "; 
+            } 
+            else{
+                speechOutput = lookupData.name + lookupData.currentStatus + lookupData.upDown 
+                    + lookupData.changePer + " percent to $" + lookupData.lastPrice + ". "; 
+            }
+            
         }
         else{
-            speechOutput = lookupData.name + lookupData.currentStatus + " at "
+            if(lookupData.currentStatus == " closed "){
+               speechOutput = lookupData.name + lookupData.currentStatus + " with no change at $"
+                + lookupData.lastPrice + ". ";  
+            }
+            else{
+                speechOutput = lookupData.name + lookupData.currentStatus + " currently trading at $"
                 + lookupData.lastPrice + ". "; 
+            }
         }
-        if(lookupData.isExtHrs){
-            speechOutput = speechOutput + 
-                + "It is " + lookupData.extUpDown + lookupData.extHrsChangePer + " percent to "
-                + lookupData.extHrsPrice + ".";
+        if(lookupData.isExtHrs && !lookupData.extStatus){
+            speechOutput = speechOutput + "It is " + lookupData.extUpDown + lookupData.extHrsChangePer + " percent to $" + lookupData.extHrsPrice + " in " + lookupData.extStatus + ". ";
         }
     }
     emit(':tellWithCard', speechOutput, SKILL_NAME, speechOutput);
@@ -79,8 +89,8 @@ function intentProcess(intentdata, emit) {
     if (!query || !query.value) {
         console.log("Slot missing or empty value");
         console.log("Query value: " + query.value);
-        var reprompt = "Now, at once, what would you like me to do? You can say. What is the stock price of Netflix.";
-        var speechOutput = "Sorry, I didn't get that.";
+        var reprompt = "What would you like me to do? For example, you can say. What is the stock price of Tesla.";
+        var speechOutput = "Sorry, I didn't get that. What company would you like to look up?";
         emit(':ask', speechOutput, reprompt);
     } else {
         var userquery = query.value;
@@ -90,7 +100,7 @@ function intentProcess(intentdata, emit) {
 }
 //Go and look up the stock symbol from intent, then get data from google api and parse.
 function makeSymbolRequestandMore(userdemand, emit) {
-    var endpoint = 'http://api.######.com:208/v1/finance/symbolQuery'; //Replace with your own stock symbol search API endpoint
+    var endpoint = 'http://api.######.com:208/v1/finance/symbolQuery'; //UPDATE This endpoint URL to your own server
     var queryString = '?ask=' + userdemand;
     var symbolReturn;
     http.get(endpoint + queryString, function (res) {
@@ -111,8 +121,8 @@ function makeSymbolRequestandMore(userdemand, emit) {
             var symbolResponseObject = JSON.parse(symbolResponseString);
             if (symbolResponseObject.status == "notfound") {
                 console.log("Error symbol lookup: " + symbolResponseObject.status);
-                var reprompt = "Let's try again. Now, at once, what would you like me to do? You can say. What is the stock price of Netflix.";
-                var speechOutput = "Sorry, I couldn't find that company.";
+                var reprompt = "You can say. What is the stock price of Netflix.";
+                var speechOutput = "Sorry, I couldn't find that company. Let's try another. What company would you like to look up?";
                 emit(':ask', speechOutput, reprompt);
             } else {
                 var symbolResponse = {
@@ -124,7 +134,7 @@ function makeSymbolRequestandMore(userdemand, emit) {
         });
     }).on('error', function (e) {
         console.log("Communications error with r://api: " + e.message);
-        var speechOutput = "I'm sorry. I seem to be having trouble connecting to the data service. Please try again later.";
+        var speechOutput = "I'm sorry. Stock Quoter is experiencing some technical difficulties connecting to data services. Please try again later.";
         emit(':tell', speechOutput);
     });
 }
@@ -137,10 +147,9 @@ function makeLookupRequest(symbolResponse, emit){
     http.get(endpoint + queryString, function (res) {
         var lookupResponseString = '';
         console.log('Status Code: ' + res.statusCode);
-
         if (res.statusCode != 200) {
             console.log("fin.Google connError");
-            var speechOutput = "I'm sorry. I seem to be having trouble connecting to the data service. Please try again later.";
+            var speechOutput = "I'm sorry. Stock Quoter is experiencing some technical difficulties connecting to data services. Please try again later.";
             emit(':tell', speechOutput);
         }
 
@@ -159,13 +168,13 @@ function makeLookupRequest(symbolResponse, emit){
         });
     }).on('error', function (e) {
         console.log("Communications error with Google: " + e.message);
-        var speechOutput = "I'm sorry. I seem to be having trouble connecting to the data service. Please try again later.";
+        var speechOutput = "I'm sorry. Stock Quoter is experiencing some technical difficulties connecting to data services. Please try again later.";
         emit(':tell', speechOutput);
     });
 }
 
 //Takes google data and parses it to useful data for building speechoutput
-function dataParse(name, lookupResponseObject){
+function dataParse(passedName, lookupResponseObject){
     var lastPriceData = lookupResponseObject.l;
     var changePercentData = lookupResponseObject.cp;
     var extHrsPriceData = lookupResponseObject.el;
@@ -212,11 +221,11 @@ function dataParse(name, lookupResponseObject){
     var currHr = datea.getHours();
     var currMin = datea.getMinutes();
     var date = datea.getDate();
-    console.log("Current datetime: " + currHr + currMin + date);
+    
     if(currHr == 14){
         if (currMin < 30){
         currentStatusData = " closed ";
-        extStatusData = "in pre-market trading.";
+        extStatusData = " pre-market trading ";
         console.log("PreMarket");
       }
       else{
@@ -227,18 +236,18 @@ function dataParse(name, lookupResponseObject){
     }
     else if(currHr >= 9 && currHr < 14){
         currentStatusData = " closed ";
-        extStatusData = "in pre-market trading.";
+        extStatusData = " pre-market trading ";
         console.log("PreMarket");
     }
     else if(currHr >= 15 && currHr < 21){
         currentStatusData = " is ";
         extStatusData = undefined;
-        console.log("Regular Hours");
+        console.log(" Regular Hours ");
     }
     else if(currHr == 21){
         if (currMin >= 15){
         currentStatusData = " closed ";
-        extStatusData = "in after-hours trading.";
+        extStatusData = " after-hours trading ";
         console.log("After Hours");
       }
       else{
@@ -249,7 +258,7 @@ function dataParse(name, lookupResponseObject){
     }
     else if(currHr > 21 && currHr < 1){
         currentStatusData = " closed ";
-        extStatusData = "in after-hours trading.";
+        extStatusData = " after-hours trading ";
         console.log("After Hours");
     }
     else{
@@ -259,17 +268,19 @@ function dataParse(name, lookupResponseObject){
     }
 
     return{
-        name: symbolResponse.name,
+        name: passedName,
         lastPrice: lastPriceData,
         changePer: changePercentData,
         extHrsPrice: extHrsPriceData,
-        exHrsChangePer: extHrsChangePercentData,
+        extHrsChangePer: extHrsChangePercentData,
         upDown: upDownData,
         extUpDown: extUpDownData,
         isExtHrs: isExtHrsData,
         currentStatus: currentStatusData,
         extStatus: extStatusData
     };
-
-
 }
+
+
+
+
