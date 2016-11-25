@@ -2,9 +2,8 @@
 var Alexa = require('alexa-sdk');
 var http = require('http');
 
-var APP_ID = 'null';//replace with skill ID from your Alexa Skills Developer Dashboard. it is similar to: 'alexa-skill-ask.app.[your-unique-value-here]';
+var APP_ID = 'undefined'; //replace with 'amzn1.ask.skill.[your-unique-value-here]';
 var SKILL_NAME = 'Stock Quoter';
-
 
 exports.handler = function(event, context, callback) {
     var alexa = Alexa.handler(event, context);
@@ -18,9 +17,8 @@ var handlers = {
     'LaunchRequest': function () {
         var speechOutput = "Welcome to Stock Quoter. What company would you like to look up?";
         var reprompt = "I can help you get the latest price for a stock. "
-                    + "You can simply open Stock Quoter and ask a question like, "
-                    + "What's the stock price for Amazon.com. Or you can say exit to quit this skill.  "
-                    + "Now, which company should I look up?";
+                    + "You can ask, What's the stock price for Amazon. Or you can say exit to quit this skill.  "
+                    + "Now, what company should I look up?";
         this.emit(':ask', speechOutput, reprompt);
     },
     'handleOneshotStockIntent': function () {
@@ -30,14 +28,17 @@ var handlers = {
         var reprompt = "Which company would you like to look up?";
         var speechOutput = "I can help you get the latest price for a stock. "
                     + "You can simply open Stock Quoter and ask a question like, "
-                    + "What's the stock price for Amazon.com. Or you can say exit to quit this skill.  "
-                    + "Now, which company should I look up?";
+                    + "What's the stock price for Amazon. Or you can say exit to quit this skill.  "
+                    + "Now, what company should I look up?";
         this.emit(':ask', speechOutput, reprompt);
     },
     'AMAZON.CancelIntent': function () {
         this.emit(':tell', 'Goodbye!');
     },
     'AMAZON.StopIntent': function () {
+        this.emit(':tell', 'Goodbye!');
+    },
+    'Unhandled': function(){
         this.emit(':tell', 'Goodbye!');
     }
 };
@@ -46,7 +47,6 @@ var handlers = {
 function buildSpeechFromParsed(lookupData, emit){
     var speechOutput;
     if(lookupData.error){
-        // do something
         speechOutput = "Sorry, I'm having trouble connecting with the data service. Please try again later.";
         emit(':tell', speechOutput);
     }
@@ -77,6 +77,7 @@ function buildSpeechFromParsed(lookupData, emit){
             speechOutput = speechOutput + "It is " + lookupData.extUpDown + lookupData.extHrsChangePer + " percent to $" + lookupData.extHrsPrice + " in " + lookupData.extStatus + ". ";
         }
     }
+    speechOutput = speechOutput.replace('&', 'and');
     emit(':tellWithCard', speechOutput, SKILL_NAME, speechOutput);
 }
 
@@ -89,7 +90,7 @@ function intentProcess(intentdata, emit) {
     if (!query || !query.value) {
         console.log("Slot missing or empty value");
         console.log("Query value: " + query.value);
-        var reprompt = "What would you like me to do? For example, you can say. What is the stock price of Tesla.";
+        var reprompt = "For example, you can say. What is the stock price of Twitter. Now, what would you like me to look up?";
         var speechOutput = "Sorry, I didn't get that. What company would you like to look up?";
         emit(':ask', speechOutput, reprompt);
     } else {
@@ -280,7 +281,6 @@ function dataParse(passedName, lookupResponseObject){
         extStatus: extStatusData
     };
 }
-
 
 
 
